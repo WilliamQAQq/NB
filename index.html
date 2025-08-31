@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>看什么看</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s;
+            flex-direction: column;
+            overflow: hidden; /* 防止主页面滚动 */
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            animation: fadeIn 0.8s ease-in-out;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #666;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+
+        #proxy-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #url-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1em;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        #url-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        #proxy-button {
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        #proxy-button:hover {
+            background-color: #0056b3;
+        }
+
+        #proxy-button:active {
+            transform: scale(0.98);
+        }
+
+        #back-button {
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #007bff;
+            background-color: transparent;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            margin-top: 10px;
+            display: none; /* 初始隐藏 */
+        }
+        
+        #back-button:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .loading-text {
+            display: none;
+            margin-top: 10px;
+            color: #666;
+            font-style: italic;
+        }
+
+        #content-frame {
+            border: none;
+            width: 100%;
+            height: 100%;
+            flex-grow: 1;
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="input-container">
+        <h1>在线代理浏览器</h1>
+        <p>输入网址，安全私密地浏览网页或进行搜索。</p>
+        <form id="proxy-form">
+            <input type="text" id="url-input" name="url" placeholder="请输入网址或搜索词，例如：https://www.google.com" required>
+            <button type="submit" id="proxy-button">开始浏览</button>
+            <div id="loading-text" class="loading-text">正在加载，请稍候...</div>
+        </form>
+        <button id="back-button">返回主页</button>
+    </div>
+    <iframe id="content-frame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation allow-popups-to-escape-sandbox"></iframe>
+
+    <script>
+        const form = document.getElementById('proxy-form');
+        const input = document.getElementById('url-input');
+        const button = document.getElementById('proxy-button');
+        const loadingText = document.getElementById('loading-text');
+        const inputContainer = document.getElementById('input-container');
+        const contentFrame = document.getElementById('content-frame');
+        const backButton = document.getElementById('back-button');
+
+        // URL 验证函数
+        function isValidURL(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            let url = input.value.trim();
+
+            if (!url) return;
+
+            button.disabled = true;
+            button.textContent = '正在加载...';
+            loadingText.style.display = 'block';
+
+            if (!isValidURL(url)) {
+                url = `https://www.bing.com/search?q=${encodeURIComponent(url)}`;
+            }
+
+            inputContainer.style.display = 'none';
+            contentFrame.style.display = 'block';
+            backButton.style.display = 'block'; // 显示返回按钮
+            
+            // 使用你的 Cloudflare Workers URL 作为代理
+            contentFrame.src = `https://polished-union-2878.chattsun268.workers.dev/${url}`;
+
+            button.disabled = false;
+            button.textContent = '开始浏览';
+            loadingText.style.display = 'none';
+        });
+
+        // 监听 iframe 加载完成事件，并更新输入框
+        contentFrame.onload = () => {
+            console.log('Iframe loaded successfully.');
+            // 尝试更新输入框，如果跨域会失败，但不会报错
+            try {
+                input.value = contentFrame.contentWindow.location.href;
+            } catch (e) {
+                // 如果无法访问，说明存在跨域安全限制
+                console.error('无法访问 iframe 中的 URL，存在跨域限制。');
+            }
+        };
+
+        // 返回主页功能
+        backButton.addEventListener('click', () => {
+            contentFrame.style.display = 'none';
+            backButton.style.display = 'none';
+            inputContainer.style.display = 'block';
+            input.value = ''; // 清空输入框
+        });
+    </script>
+</body>
+</html>
