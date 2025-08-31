@@ -172,16 +172,16 @@
             button.textContent = '正在加载...';
             loadingText.style.display = 'block';
 
-            if (!isValidURL(url)) {
-                url = `https://www.bing.com/search?q=${encodeURIComponent(url)}`;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = `https://${url}`;
             }
 
             inputContainer.style.display = 'none';
             contentFrame.style.display = 'block';
             backButton.style.display = 'block'; // 显示返回按钮
             
-            // 使用你的 Cloudflare Workers URL 作为代理
-            contentFrame.src = `https://polished-union-2878.chattsun268.workers.dev/${url}`;
+            // 直接在 iframe 中加载 URL
+            contentFrame.src = url;
 
             button.disabled = false;
             button.textContent = '开始浏览';
